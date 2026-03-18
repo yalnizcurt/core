@@ -5,6 +5,7 @@ from __future__ import annotations
 from aiohttp import ClientError
 
 from homeassistant.components.rest.const import DOMAIN
+from homeassistant.components.rest.system_health import system_health_info
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
 
@@ -80,17 +81,13 @@ async def test_rest_system_health_unreachable(
 
 async def test_rest_system_health_no_resources(
     hass: HomeAssistant,
-    aioclient_mock: AiohttpClientMocker,
 ) -> None:
-    """Test REST system health reports zero resources when none configured."""
-    # Test the system_health_info function directly when no REST resources are
-    # configured.  We inject empty domain data to exercise the defensive path
-    # that guards against a missing or empty REST_DATA list.
-    hass.data["rest"] = {"rest_data": []}
+    """Test REST system_health_info returns zero counts when no resources are configured."""
+    # Call system_health_info directly without setting up the REST component.
+    # hass.data.get(DOMAIN, {}) returns {} so REST_DATA defaults to an empty
+    # list – this exercises the defensive guard path in the function.
+    info = await system_health_info(hass)
 
-    from homeassistant.components.rest.system_health import system_health_info
-
-    direct_info = await system_health_info(hass)
-    assert direct_info["configured_resources"] == 0
-    assert direct_info["reachable_resources"] == 0
-    assert direct_info["unreachable_resources"] == 0
+    assert info["configured_resources"] == 0
+    assert info["reachable_resources"] == 0
+    assert info["unreachable_resources"] == 0
